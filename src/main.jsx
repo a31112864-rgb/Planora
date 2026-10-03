@@ -1,11 +1,13 @@
 import { StrictMode } from 'react'
+import '@fortawesome/fontawesome-free/css/all.min.css'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import Home from './pages/home.jsx'
+import Home from './pages/Home.jsx'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import About_us from './pages/about us.jsx'
-import Courses from './pages/courses.jsx'
-import Blog from './pages/Blog.jsx'
+import Projects from './pages/Projects.jsx'
+import Tasks from './pages/Tasks.jsx'
+import Team from './pages/Team.jsx'
+import Reports from './pages/Reports.jsx'
 
 let all_routes = createBrowserRouter(
   [
@@ -14,16 +16,20 @@ let all_routes = createBrowserRouter(
       element:<Home/>
     },
     {
-      path:'/about',
-      element:<About_us/>
+      path:'/projects',
+      element:<Projects/>
     },
     {
-      path:'/courses',
-      element:<Courses/>
+      path:'/tasks',
+      element:<Tasks/>
     },
     {
-      path:'/blog',
-      element:<Blog/>
+      path:'/team',
+      element:<Team/>
+    },
+    {
+      path:'/reports',
+      element:<Reports/>
     }
   ]
 )
