@@ -1,0 +1,35 @@
+* {
+    padding: 0;
+    margin: 0;
+}
+
+#whole {
+    position: fixed;
+    height: 100vh;
+    width: 85vw;
+    right: 0px;
+}
+#upper-heading {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    width: 100vw;
+    height: 50px;
+    padding-left: 20px;
+}
+#search {
+    display: flex;
+    align-items: center;
+    padding-left: 15px;
+    border-radius: 6px;
+    height: 35px;
+    width: 35vw;
+    min-width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+#main {
+    padding-left: 15px;
+    background-color: rgb(243, 243, 243);
+    width: 100vw;
+    height: 100vh;
+}
