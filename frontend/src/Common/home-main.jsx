@@ -27,14 +27,26 @@ export default function Homemain() {
                     <p className='text-gray-500'>2 active . 1 completed</p>
                 </div>
                 <div className="card w-50 h-44 flex flex-col rounded-md gap-0.5">
-                    
+                    <div className='flex items-center justify-center rounded-[50%] text-white text-[23px] bg-green-700 size-10'><i className="fa-solid fa-check"></i></div>
+                    <p className='text-gray-600 font-medium'>Total Tasks</p>
+                    <p className='font-semibold text-[40px]'>12</p>
+                    <p className='text-gray-500 text-[15px]'>10 pending . 2 completed</p>
                 </div>
                 <div className="card w-50 h-44 flex flex-col rounded-md gap-0.5">
-
+                    <div className='flex items-center justify-center rounded-[50%] text-blue-700 text-[25px] bg-blue-200 size-10'><i className="fa-solid fa-users"></i></div>
+                    <p className='text-gray-600 font-medium'>Team Members</p>
+                    <p className='font-semibold text-[40px]'>3</p>
+                    <p className='text-gray-500'>2 online . 1 offline</p>
                 </div>
                 <div className="card w-50 h-44 flex flex-col rounded-md gap-0.5">
-
+                    <div className='flex items-center justify-center rounded-[50%] text-orange-500 text-[25px] bg-green-200 size-10'><i className="fa-solid fa-clock-rotate-left"></i></div>
+                    <p className='text-gray-600 font-medium'>Upcoming Deadlines</p>
+                    <p className='font-semibold text-[40px]'>2</p>
+                    <p className='text-gray-500'>This week</p>
                 </div>
+            </div>
+            <div className='taskList pl-2'>
+                
             </div>
 
         </div>
