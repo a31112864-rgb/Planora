@@ -4,8 +4,17 @@ import database_moduls
 from sqlalchemy.orm import Session
 from moduls import User
 from security import hash_password, verify_password
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 database_moduls.Base.metadata.create_all(engine)
 
 def init_db():
@@ -89,3 +98,12 @@ def logout_user(response: Response,id: str | None = Cookie(default=None), db: Se
         samesite="lax"
     )
     return "logout sucessfully"
+
+@app.get("/check-auth")
+def check_auth(
+    user_id: str | None = Cookie(default=None)
+):
+    if user_id is None:
+        return {"logged_in": False}
+
+    return {"logged_in": True}

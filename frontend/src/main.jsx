@@ -8,6 +8,7 @@ import Projects from './pages/Projects.jsx'
 import Tasks from './pages/Tasks.jsx'
 import Team from './pages/Team.jsx'
 import Reports from './pages/Reports.jsx'
+import Createaccount from './Common/Createaccount.jsx'
 
 let all_routes = createBrowserRouter(
   [
@@ -30,6 +31,10 @@ let all_routes = createBrowserRouter(
     {
       path:'/reports',
       element:<Reports/>
+    },
+    {
+      path:'/createAccount',
+      element:<Createaccount/>
     }
   ]
 )

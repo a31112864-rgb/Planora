@@ -1,20 +1,109 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import './home-main.css'
+import { Link } from 'react-router';
+
 export default function Homemain() {
+    const [topButton, setTopButton] = useState(false);
+    const [login, setLogin] = useState(false);
+
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    const sign_in = () => {
+        setLogin(!login);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        console.log("Email:", email);
+        console.log("Password:", password);
+    };
+
+    useEffect(() => {
+        fetch("http://localhost:8000/check-auth", {
+            credentials: "include"
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.logged_in) {
+                console.log("User is logged in");
+                setTopButton(true);
+            } else {
+                console.log("Not logged in");
+                setTopButton(false);
+            }
+        })
+        .catch(error => {
+            console.error("Auth check failed:", error);
+            setTopButton(false);
+        });
+    }, []);
+
   return (
     <div id='whole'>
         <div id='upper-heading' className='gap-128'>
             <div id='Search' className='flex items-center gap-0.5'>
                 <input id='search' type='text' placeholder='Search projects, tasks or people'/><button className='bg-blue-500 cursor-pointer hover:bg-blue-600 active:bg-blue-800 size-9 rounded-md'><i class="fa-solid fa-magnifying-glass"></i></button>
             </div>
-            <div id='icon' className='flex items-center gap-4'>
-                <button className='cursor-pointer'><i class="fa-regular fa-bell"></i></button>
-                <button className='size-8 cursor-pointer rounded-[50%] bg-blue-500 text-white hover:bg-blue-700'>
-                    A
-                </button>
-                <button className='cursor-pointer'><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            {
+                topButton
+                ?
+                <div id='icon' className='flex items-center gap-4'>
+                    <button className='cursor-pointer'><i class="fa-regular fa-bell"></i></button>
+                    <button className='size-8 cursor-pointer rounded-[50%] bg-blue-500 text-white hover:bg-blue-700'>
+                        A
+                    </button>
+                    <button className='cursor-pointer'><i class="fa-solid fa-ellipsis-vertical"></i></button>
                 
-            </div>
+                </div>
+                :
+                <div id='icon' className='flex items-center'>
+                    <button className='cursor-pointer flex items-center justify-center bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white font-semibold w-20 h-8 rounded-md' onClick={sign_in}>Sign In</button>
+                </div>
+            }
+            {login && (
+                <div className="loginCard fixed top-[20%] left-[40%] bg-white border-2 border-red-300 w-80 h-80 rounded-md">
+                    <div className='flex justify-between'>
+                        <h3 className='font-semibold text-black text-[30px]'>Sign In</h3><button onClick={sign_in} className='text-black cursor-pointer'><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <form onSubmit={handleSubmit}>
+                        <label htmlFor='userEmail'>Email:</label>
+                        <br/>
+                        <input
+                            className='border-black border-2'
+                            style={{padding: `0px 0px 0px 5px`}}
+                            id='userEmail'
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                        <br/>
+                        <br/>
+
+                        <label htmlFor='userPassword'>Password:</label>
+                        <br/>
+                        <input
+                            id='userPassword'
+                            style={{padding: `0px 0px 0px 5px`}}
+                            type="password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className='border-2 border-black'
+                        />
+                        <br/>
+                        <br/>
+
+                        <button type="submit" className='bg-yellow-500 cursor-pointer text-black font-medium w-20 h-10 rounded-md flex items-center justify-center active:bg-yellow-600'>
+                            Sign In
+                        </button>
+                        <br/>
+                        <p className='text-black'>Do you want to create an account?Click on <Link to={'/Createaccount'}><p className='text-blue-600 inline'>create account.</p></Link></p>
+                    </form>
+                </div>
+            )}
         </div>
         <div id='main'>
             <h1 className='text-[35px] font-semibold'>Hey, lets achieve together!</h1>

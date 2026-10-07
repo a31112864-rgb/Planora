@@ -47,3 +47,8 @@
     padding-top: 10px;
     padding-left: 20px;
 }
+.loginCard {
+    padding-left: 15px;
+    padding-right: 10px;
+    transition: position 10s ease;
+}
