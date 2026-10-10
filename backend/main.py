@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, Cookie, Response
 from database import engine, session
 import database_moduls
 from sqlalchemy.orm import Session
-from moduls import User
+from moduls import User, loginUser
 from security import hash_password, verify_password
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -40,11 +40,17 @@ def create_user(user: User, db: Session = Depends(init_db)):
         email = user.email,
         password = hashed_password
     )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-
-    return f"sucessfully add user. User id is {db_user.id}"
+    if db_user:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return {
+            "message": "User sign up successful!",
+            "user_id": db_user.id
+        }
+    return {
+        "message": "User sign up failed."
+    }
 
 
 @app.put("/user")
@@ -72,38 +78,65 @@ def delete_user(id: str | None = Cookie(default=None), db: Session = Depends(ini
     return "user not found"
 
 @app.post("/login_user")
-def login_user(email: str,password: str, response: Response, db: Session = Depends(init_db)):
-    user = db.query(database_moduls.Db_user).filter(database_moduls.Db_user.email == email).first()
-    if not user:
+def login_user(
+    login_data: loginUser,
+    response: Response,
+    db: Session = Depends(init_db)
+):
+    user = db.query(database_moduls.Db_user).filter(
+        database_moduls.Db_user.email == login_data.email
+    ).first()
+
+    if not user or not verify_password(
+        login_data.password, user.password
+    ):
         return {"error": "Invalid email or password"}
 
-    if verify_password(password, user.password):
-        response.set_cookie(
-            key="user_id",
-            value=str(user_id),
-            httponly=True,
-            secure=True,
-            samesite="lax"
-        )
-        return {"message": "Login successful"}
+    response.set_cookie(
+        key="user_id",
+        value=str(user.id),  # ID from the database
+        httponly=True,
+        secure=False,        # Local HTTP development only
+        samesite="lax",
+        max_age=20000000
+    )
 
-    return {"error": "Invalid email or password"}
+    return {
+        "message": "Login successful",
+        "username": user.username
+        
+        }
+
 
 @app.post("/logout")
-def logout_user(response: Response,id: str | None = Cookie(default=None), db: Session = Depends(init_db)):
+def logout_user(response: Response):
     response.delete_cookie(
         key="user_id",
         httponly=True,
-        secure=True,
+        secure=False,        # Match the login cookie
         samesite="lax"
     )
-    return "logout sucessfully"
+
+    return {"message": "Logout successful"}
+
+
 
 @app.get("/check-auth")
 def check_auth(
-    user_id: str | None = Cookie(default=None)
+    user_id: str | None = Cookie(default=None),
+    db: Session = Depends(init_db)
 ):
     if user_id is None:
         return {"logged_in": False}
 
-    return {"logged_in": True}
+    user = db.query(database_moduls.Db_user).filter(
+        database_moduls.Db_user.id == int(user_id)
+    ).first()
+
+    if not user:
+        return {"logged_in": False}
+
+    return {
+        "logged_in": True,
+        "username": user.username
+    }

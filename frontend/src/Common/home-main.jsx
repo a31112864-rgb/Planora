@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import './home-main.css'
 import { Link } from 'react-router';
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function Homemain() {
+    const [username, setUsername] = useState("")
     const [topButton, setTopButton] = useState(false);
     const [login, setLogin] = useState(false);
 
@@ -13,11 +15,36 @@ export default function Homemain() {
         setLogin(!login);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        console.log("Email:", email);
-        console.log("Password:", password);
+        try {
+            const response = await fetch("http://localhost:8000/login_user", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success("Login Successful!");
+                setLogin(false);
+                setTopButton(true);
+            } else {
+                toast.error(data.error || "Invalid Email or Password!");
+            }
+
+        } catch (error) {
+            console.error(error);
+            toast.error("Server connection failed!");
+        }
     };
 
     useEffect(() => {
@@ -27,11 +54,11 @@ export default function Homemain() {
         .then(res => res.json())
         .then(data => {
             if (data.logged_in) {
-                console.log("User is logged in");
                 setTopButton(true);
+                setUsername(data.username || "");
             } else {
-                console.log("Not logged in");
                 setTopButton(false);
+                setUsername("");
             }
         })
         .catch(error => {
@@ -39,9 +66,9 @@ export default function Homemain() {
             setTopButton(false);
         });
     }, []);
-
   return (
     <div id='whole'>
+        <Toaster />
         <div id='upper-heading' className='gap-128'>
             <div id='Search' className='flex items-center gap-0.5'>
                 <input id='search' type='text' placeholder='Search projects, tasks or people'/><button className='bg-blue-500 cursor-pointer hover:bg-blue-600 active:bg-blue-800 size-9 rounded-md'><i class="fa-solid fa-magnifying-glass"></i></button>
@@ -51,8 +78,8 @@ export default function Homemain() {
                 ?
                 <div id='icon' className='flex items-center gap-4'>
                     <button className='cursor-pointer'><i class="fa-regular fa-bell"></i></button>
-                    <button className='size-8 cursor-pointer rounded-[50%] bg-blue-500 text-white hover:bg-blue-700'>
-                        A
+                    <button className='size-8 rounded-[50%] bg-blue-500 text-white'>
+                        {username ? username.charAt(0).toUpperCase() : "?"}
                     </button>
                     <button className='cursor-pointer'><i class="fa-solid fa-ellipsis-vertical"></i></button>
                 
@@ -140,6 +167,5 @@ export default function Homemain() {
 
         </div>
     </div>
-    
-  )
+    )
 }

@@ -52,3 +52,7 @@
     padding-right: 10px;
     transition: position 10s ease;
 }
+.log {
+     top: 20%;
+     left: 40%;
+}
