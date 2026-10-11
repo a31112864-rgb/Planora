@@ -8,3 +8,7 @@ class User(BaseModel):
 class loginUser(BaseModel):
     email: EmailStr
     password: str
+
+class Projects(BaseModel):
+    name: str
+    user_id: int

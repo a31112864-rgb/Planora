@@ -1,8 +1,9 @@
 from fastapi import FastAPI, Depends, Cookie, Response
+from fastapi import HTTPException
 from database import engine, session
 import database_moduls
 from sqlalchemy.orm import Session
-from moduls import User, loginUser
+from moduls import User, loginUser, Projects
 from security import hash_password, verify_password
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -140,3 +141,108 @@ def check_auth(
         "logged_in": True,
         "username": user.username
     }
+
+@app.get("/my-tasks")
+def get_my_tasks(
+    user_id: str | None = Cookie(default=None),
+    db: Session = Depends(init_db)
+):
+    if user_id is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Please log in first"
+        )
+
+    try:
+        current_user_id = int(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid login session"
+        )
+
+    tasks = (
+        db.query(database_moduls.Task)
+        .join(
+            database_moduls.ProjectMember,
+            database_moduls.Task.project_id == database_moduls.ProjectMember.project_id
+        )
+        .filter(
+            database_moduls.ProjectMember.user_id
+            == current_user_id
+        )
+        .all()
+    )
+
+    return {"tasks": tasks}
+
+
+@app.get("/projects")
+def get_projects(user_id: str | None = Cookie(default=None), db: Session = Depends(init_db)):
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Login first"
+        )
+    projects = db.query(database_moduls.Db_project).filter(database_moduls.Db_project.user_id == int(user_id)).all()
+    return {
+        "project": projects
+    }
+
+@app.post("/projects")
+def create_projects(project: Projects, user_id: str | None = Cookie(default=None), db: Session = Depends(init_db)):
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Login first"
+        )
+
+    project = database_moduls.Db_project(
+        name = project.name,
+        user_id = user_id
+    )
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+    return {
+        "projectname": project.name,
+        "projectid": project.id
+        }
+
+@app.put("/projects")
+def update_projects(project: Projects, project_id: int, user_id: str | None = Cookie(default=None), db: Session = Depends(init_db)):
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Login first"
+        )
+    db_project = db.query(database_moduls.Db_project).filter(database_moduls.Db_project.id == project_id).first()
+    if db_project:
+        db_project = database_moduls.Db_project(
+            name = project.name
+        )
+        db.commit()
+        return {
+            "detail": "project updated successfully."
+        }
+    return {
+        "detail": "user not found"
+    }
+
+@app.delete("/projects")
+def update_projects(project_id: int, user_id: str | None = Cookie(default=None), db: Session = Depends(init_db)):
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Login first"
+        )
+    db_project = db.query(database_moduls.Db_project).filter(database_moduls.Db_project.id == project_id).first()
+    if db_project:
+        db.delete(db_project)
+        db.commit()
+
+    
+
+
+    
+
