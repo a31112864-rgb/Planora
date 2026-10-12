@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from database import engine, session
 import database_moduls
 from sqlalchemy.orm import Session
-from moduls import User, loginUser, Projects
+from moduls import User, loginUser, Projects, Tasks
 from security import hash_password, verify_password
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -161,12 +161,10 @@ def get_my_tasks(
             detail="Invalid login session"
         )
 
-    tasks = (
-        db.query(database_moduls.Task)
-        .join(
-            database_moduls.ProjectMember,
-            database_moduls.Task.project_id == database_moduls.ProjectMember.project_id
-        )
+    all_tasks = db.query(database_moduls.Task).all()
+
+    memberships = (
+        db.query(database_moduls.ProjectMember)
         .filter(
             database_moduls.ProjectMember.user_id
             == current_user_id
@@ -174,8 +172,42 @@ def get_my_tasks(
         .all()
     )
 
-    return {"tasks": tasks}
+    print("Logged-in user ID:", current_user_id)
+    print("All tasks:", [
+        (t.id, t.project_id) for t in all_tasks
+    ])
+    print("User memberships:", [
+        (m.user_id, m.project_id) for m in memberships
+    ])
 
+    tasks = (
+        db.query(database_moduls.Task)
+        .join(
+            database_moduls.ProjectMember,
+            database_moduls.Task.project_id
+            == database_moduls.ProjectMember.project_id
+        )
+        .filter(
+            database_moduls.ProjectMember.user_id
+            == current_user_id
+        )
+        .distinct()
+        .all()
+    )
+
+    return {
+        "tasks": [
+            {
+                "id": t.id,
+                "project_id": t.project_id,
+                "project_name": t.project_name,
+                "title": t.name,
+                "status": t.status,
+                "due_date": str(t.due_date) if t.due_date else None
+            }
+            for t in tasks
+        ]
+    }
 
 @app.get("/projects")
 def get_projects(user_id: str | None = Cookie(default=None), db: Session = Depends(init_db)):
@@ -190,25 +222,36 @@ def get_projects(user_id: str | None = Cookie(default=None), db: Session = Depen
     }
 
 @app.post("/projects")
-def create_projects(project: Projects, user_id: str | None = Cookie(default=None), db: Session = Depends(init_db)):
+def create_projects(
+    project: Projects,
+    user_id: str | None = Cookie(default=None),
+    db: Session = Depends(init_db)
+):
     if not user_id:
-        raise HTTPException(
-            status_code=401,
-            detail="Login first"
-        )
+        raise HTTPException(status_code=401, detail="Login first")
 
-    project = database_moduls.Db_project(
-        name = project.name,
-        user_id = user_id
+    new_project = database_moduls.Db_project(
+        name=project.name,
+        user_id=int(user_id)
     )
-    db.add(project)
-    db.commit()
-    db.refresh(project)
-    return {
-        "projectname": project.name,
-        "projectid": project.id
-        }
 
+    db.add(new_project)
+    db.flush()  # Generates the project ID before committing
+
+    membership = database_moduls.ProjectMember(
+        user_id=int(user_id),
+        project_id=new_project.id
+    )
+
+    db.add(membership)
+    db.commit()
+    db.refresh(new_project)
+
+    return {
+        "projectname": new_project.name,
+        "projectid": new_project.id
+    }
+    
 @app.put("/projects")
 def update_projects(project: Projects, project_id: int, user_id: str | None = Cookie(default=None), db: Session = Depends(init_db)):
     if not user_id:
@@ -241,8 +284,74 @@ def update_projects(project_id: int, user_id: str | None = Cookie(default=None),
         db.delete(db_project)
         db.commit()
 
-    
+@app.post("/task")
+def create_task(
+    task: Tasks,
+    user_id: str | None = Cookie(default=None),
+    db: Session = Depends(init_db)
+):
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Login first")
 
+    try:
+        current_user_id = int(user_id)
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid login session")
 
-    
+    membership = db.query(database_moduls.ProjectMember).filter(
+        database_moduls.ProjectMember.user_id == current_user_id,
+        database_moduls.ProjectMember.project_id == task.project_id
+    ).first()
 
+    if not membership:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not a member of this project"
+        )
+
+    new_task = database_moduls.Task(
+        name=task.name,
+        project_id=task.project_id,
+        project_name=task.project_name,
+        status=task.status,
+        due_date=task.due_date
+    )
+
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
+
+    return {
+        "detail": "Task added successfully",
+        "task_id": new_task.id
+    }
+
+@app.put("/task")
+def update_task(task_id: int,name: str, due_date: str, status: str, db: Session = Depends(init_db)):
+    db_task = db.query(database_moduls.Task).filter(database_moduls.Task.id == task_id).first()
+    if db_task:
+        db_task = database_moduls.Task(
+            name = name,
+            due_date = due_date,
+            status = status
+        )
+        db.commit()
+        return {
+            "detail": "task updated successfully"
+        }
+    return {
+            "detail": "task updation failed"
+        }
+
+@app.delete("/task")
+def delete_task(task_id: int, db: Session = Depends(init_db)):
+    db_task = db.query(database_moduls.Task).filter(database_moduls.Task.id == task_id).first()
+    if db_task:
+        db.delete(db_task)
+        db.commit()
+        return {
+            "detail": "task deleted successfully"
+        }
+    return {
+            "detail": "task deletion failed"
+        }

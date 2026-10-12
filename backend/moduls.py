@@ -11,4 +11,10 @@ class loginUser(BaseModel):
 
 class Projects(BaseModel):
     name: str
-    user_id: int
+
+class Tasks(BaseModel):
+    name: str
+    project_id: int
+    project_name: str
+    status: str
+    due_date: str

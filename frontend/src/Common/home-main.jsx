@@ -82,7 +82,6 @@ export default function Homemain() {
                         {username ? username.charAt(0).toUpperCase() : "?"}
                     </button>
                     <button className='cursor-pointer'><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                
                 </div>
                 :
                 <div id='icon' className='flex items-center'>

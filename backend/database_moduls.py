@@ -34,5 +34,6 @@ class Task(Base):
     project_name: Mapped[str] = mapped_column(String(50))
     name: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
+    due_date: Mapped[str] = mapped_column(String(40), nullable=False)
 
 Base.metadata.create_all(engine)
