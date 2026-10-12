@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, Cookie, Response
+from datetime import datetime, timezone
 from fastapi import HTTPException
 from database import engine, session
 import database_moduls
@@ -24,6 +25,47 @@ def init_db():
         yield db
     finally:
         db.close()
+
+def notify_project_members(
+    db: Session,
+    project_id: int,
+    actor_id: int,
+    description: str
+):
+    # Save the activity
+    activity = database_moduls.Activity(
+        project_id=project_id,
+        actor_id=actor_id,
+        description=description,
+        created_at=datetime.now(timezone.utc)
+    )
+
+    db.add(activity)
+    db.flush()
+
+    # Find all members of the project
+    members = db.query(database_moduls.ProjectMember).filter(
+        database_moduls.ProjectMember.project_id == project_id
+    ).all()
+
+    # Get the project owner too
+    project = db.query(database_moduls.Db_project).filter(
+        database_moduls.Db_project.id == project_id
+    ).first()
+
+    recipient_ids = {member.user_id for member in members}
+
+    if project:
+        recipient_ids.add(project.user_id)
+
+    # Create a notification for everyone except the actor
+    for recipient_id in recipient_ids - {actor_id}:
+        notification = database_moduls.Notification(
+            user_id=recipient_id,
+            activity_id=activity.id
+        )
+        db.add(notification)
+    db.commit()
 
 @app.get("/user")
 def get_user(id: str | None = Cookie(default=None),db: Session = Depends(init_db)):
@@ -237,6 +279,12 @@ def create_projects(
 
     db.add(new_project)
     db.flush()  # Generates the project ID before committing
+    notify_project_members(
+        db=db,
+        actor_id=int(user_id),
+        project_id=new_project.id,
+        description=f'Created new project "{project.name}"'
+    )
 
     membership = database_moduls.ProjectMember(
         user_id=int(user_id),
@@ -244,6 +292,7 @@ def create_projects(
     )
 
     db.add(membership)
+
     db.commit()
     db.refresh(new_project)
 
@@ -264,6 +313,12 @@ def update_projects(project: Projects, project_id: int, user_id: str | None = Co
         db_project = database_moduls.Db_project(
             name = project.name
         )
+        notify_project_members(
+            db=db,
+            actor_id=int(user_id),
+            project_id=project_id,
+            description=f'Updated a project "{db_project.name}"'
+        )
         db.commit()
         return {
             "detail": "project updated successfully."
@@ -282,6 +337,12 @@ def update_projects(project_id: int, user_id: str | None = Cookie(default=None),
     db_project = db.query(database_moduls.Db_project).filter(database_moduls.Db_project.id == project_id).first()
     if db_project:
         db.delete(db_project)
+        notify_project_members(
+            db=db,
+            actor_id=int(user_id),
+            project_id=project_id,
+            description=f'Deleted a project "{db_project.name}"'
+        )
         db.commit()
 
 @app.post("/task")
@@ -318,6 +379,12 @@ def create_task(
     )
 
     db.add(new_task)
+    notify_project_members(
+        db=db,
+        actor_id=int(user_id),
+        project_id=task.project_id,
+        description=f'Added a task "{task.name}"'
+    )
     db.commit()
     db.refresh(new_task)
 
@@ -335,6 +402,12 @@ def update_task(task_id: int,name: str, due_date: str, status: str, db: Session 
             due_date = due_date,
             status = status
         )
+        notify_project_members(
+            db=db,
+            actor_id=int(user_id),
+            project_id=db_task.project_id,
+            description=f'Updated a task "{db_task.name}"'
+        )
         db.commit()
         return {
             "detail": "task updated successfully"
@@ -348,6 +421,12 @@ def delete_task(task_id: int, db: Session = Depends(init_db)):
     db_task = db.query(database_moduls.Task).filter(database_moduls.Task.id == task_id).first()
     if db_task:
         db.delete(db_task)
+        notify_project_members(
+            db=db,
+            actor_id=int(user_id),
+            project_id=new_project_id,
+            description=f'Deleted a task "{db_task.name}"'
+        )
         db.commit()
         return {
             "detail": "task deleted successfully"
