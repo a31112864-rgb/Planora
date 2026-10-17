@@ -56,3 +56,10 @@
      top: 20%;
      left: 40%;
 }
+btn.active {
+    background-color: rgb(76, 0, 255);
+    color: white;
+}
+ul li {
+    list-style: none;
+}

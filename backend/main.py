@@ -152,7 +152,7 @@ def login_user(
 
 
 @app.post("/logout")
-def logout_user(response: Response):
+def logout_user(response: Response, user_id: str | None = Cookie(default=None)):
     response.delete_cookie(
         key="user_id",
         httponly=True,
@@ -238,17 +238,7 @@ def get_my_tasks(
     )
 
     return {
-        "tasks": [
-            {
-                "id": t.id,
-                "project_id": t.project_id,
-                "project_name": t.project_name,
-                "title": t.name,
-                "status": t.status,
-                "due_date": str(t.due_date) if t.due_date else None
-            }
-            for t in tasks
-        ]
+        "tasks": tasks
     }
 
 @app.get("/projects")
@@ -434,3 +424,16 @@ def delete_task(task_id: int, db: Session = Depends(init_db)):
     return {
             "detail": "task deletion failed"
         }
+
+@app.patch("/tasks/{taskId}/complete")
+def complete_task(taskId: int, user_id: str | None = Cookie(default=None), db: Session = Depends(init_db)):
+    db_task = db.query(database_moduls.Task).filter(database_moduls.Task.id == taskId).first()
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Login first")
+    if db_task:
+        db_task.status = "completed"
+        db.commit()
+        db.refresh(db_task)
+        return("task updated successfully.")
+    raise HTTPException(status_code=401, detail="Task not found")
+    

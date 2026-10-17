@@ -18,3 +18,9 @@ class Tasks(BaseModel):
     project_name: str
     status: str
     due_date: str
+
+class Activities(BaseModel):
+    project_id: int
+    actor_id: int
+    description: str
+    created_at: str

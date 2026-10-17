@@ -18,6 +18,7 @@ class Db_project(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("User.id"))
     name: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
 
 class ProjectMember(Base):
     __tablename__ = "project_members"
